@@ -16,13 +16,18 @@ namespace RabbitMQExample.Consumer
             using var connection = factory.CreateConnection();
 
             var channel = connection.CreateModel();
+            //channel.ExchangeDeclare("logs-fanout", durable: true, type: ExchangeType.Fanout);
 
-            //channel.QueueDeclare("hello-queue", true, false, false);
-            channel.BasicQos(0, 10, true);
+            var randomQueueName = channel.QueueDeclare().QueueName;
+            channel.QueueBind(randomQueueName, "logs-fanout", "", null);
+
+
+            channel.BasicQos(0, 1, false);
 
             var consumer = new EventingBasicConsumer(channel);
 
-            channel.BasicConsume("hello-queue", false, consumer);
+            channel.BasicConsume(randomQueueName, false, consumer);
+            Console.WriteLine("Loglar dinleniyor...");
 
             consumer.Received += (object sender, BasicDeliverEventArgs e) =>
             {
@@ -30,7 +35,7 @@ namespace RabbitMQExample.Consumer
                 Thread.Sleep(1500);
                 Console.WriteLine("Gelen Mesaj: " + message);
                 channel.BasicAck(e.DeliveryTag, false);
-            }; 
+            };
 
             Console.ReadLine();
         }
