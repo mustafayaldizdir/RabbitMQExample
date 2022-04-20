@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.IO;
 using System.Text;
 using System.Threading;
 
@@ -16,17 +17,13 @@ namespace RabbitMQExample.Consumer
             using var connection = factory.CreateConnection();
 
             var channel = connection.CreateModel();
-            //channel.ExchangeDeclare("logs-fanout", durable: true, type: ExchangeType.Fanout);
-
-            var randomQueueName = channel.QueueDeclare().QueueName;
-            channel.QueueBind(randomQueueName, "logs-fanout", "", null);
-
 
             channel.BasicQos(0, 1, false);
+            var queueName = "direct-queue-Critical";
 
             var consumer = new EventingBasicConsumer(channel);
 
-            channel.BasicConsume(randomQueueName, false, consumer);
+            channel.BasicConsume(queueName, false, consumer);
             Console.WriteLine("Loglar dinleniyor...");
 
             consumer.Received += (object sender, BasicDeliverEventArgs e) =>
@@ -34,6 +31,7 @@ namespace RabbitMQExample.Consumer
                 var message = Encoding.UTF8.GetString(e.Body.ToArray());
                 Thread.Sleep(1500);
                 Console.WriteLine("Gelen Mesaj: " + message);
+                //File.AppendAllText("log-ciritcal.txt", message + "\n");
                 channel.BasicAck(e.DeliveryTag, false);
             };
 
